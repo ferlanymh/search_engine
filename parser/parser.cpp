@@ -11,7 +11,6 @@
 #include<boost/filesystem/operations.hpp>
 #include"../common/util.hpp"//包含我们设计的工具类
 
-
 const std::string input_path = "../data/input/html/";//输入文件路径
 const std::string output_path = "../data/tmp/output";//输出文件路径
 
@@ -132,7 +131,7 @@ bool ParseURL(const std::string& file_path, std::string* url)
   //我们发现每个html文件的URL都是有一定规律的。
   //每个URL的前半部分都是一样的。
   //而URL的后半部分则在file_path当中，所以我要做的就是前半部分和后半部分的拼接
-  std::string first_part = "https://www.boost.org/doc/libs/1_69_0/doc/";
+  std::string first_part = "https://www.boost.org/doc/libs/1_69_0/doc/html/";
   //file_path路径：     ../data/input/html/array.html 
   //我们需要的是        /html/array.html
   
@@ -177,6 +176,16 @@ bool ParseFile(const std::string& file_path,DocInfo* doc_info)
   return true;
 }
 
+
+//C++中ofstream和ifstream不可以拷贝！
+//将doc_info化作一行然后写入到file中，这样file中每一行就对应一个html的各项信息
+void WriteOutput(const DocInfo& doc_info,std::ofstream& file)
+{
+  //中间要隔开 
+  std::string line = doc_info.title + '\3' + doc_info.url + '\3' + doc_info.content + '\n';
+  file.write(line.c_str(),line.size());
+}
+
 int main()
 {
   std::vector<std::string> file_list;//用于存储html列表
@@ -192,7 +201,13 @@ int main()
     std::cout<<str<<std::endl;
   }
 
-  
+  std::ofstream output_file(output_path.c_str());//打开输出文件，用于存各个doc_info
+  if (!output_file.is_open())//打开失败
+  {
+    std::cout<<"open output file failed! the output_path is "<<output_path<<std::endl;
+    return 1;
+  }
+
 
 
   //2. 挨个对行文本文件中每个html路径进行解析，提取出各个html文件的\
@@ -212,6 +227,7 @@ int main()
     WriteOutput(doc_info,output_file);    
   }
   
+  output_file.close();
   return 0;
 }
 
