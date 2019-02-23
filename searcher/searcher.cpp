@@ -2,6 +2,16 @@
 #include "../common/util.hpp"
 namespace searcher
 {
+  const char* const DICT_PATH = "./jieba_dict/jieba.dict.utf8";
+  const char* const HMM_PATH = "./jieba_dict/hmm_model.utf8";
+  const char* const USER_DICT_PATH = "./jieba_dict/user.dict.utf8";
+  const char* const IDF_PATH = "./jieba_dict/idf.utf8";
+  const char* const STOP_WORD_PATH = "./jieba_dict/stop_words.utf8";
+  
+  //教程说要先用词典文件初始化jiaba对象
+  index::index() : jieba(DICT_PATH,HMM_PATH,USER_DICT_PATH,IDF_PATH,STOP_WORD_PATH)
+  {}
+
   //查正派索引函数实现，返回n号html文件的信息结构体doc_info
   const DocInfo* index::GetDocInfo(uint64_t doc_id) const
   {
@@ -27,7 +37,10 @@ namespace searcher
     return &pos->second;//我们需要的是html编号和词频构成的结构体，刚好是迭代器的second
     
   }
-  bool Bulid(const std::string& input_path)
+  
+
+
+  bool index::Bulid(const std::string& input_path)
   {
     std::cout<<"build index start!"<<std::endl;
     //1.先打开我们处理好的html行文本文件，对其中每一行进行解读
@@ -45,12 +58,24 @@ namespace searcher
      const DocInfo* doc_info = BuildForward(line);
       
       //3.构建倒排索引
-      BuildInverted(doc_info);
+      BuildInverted(*doc_info);
+
+      if (doc_info->doc_id % 500 == 0)
+        std::cout<<"already build: "<<(doc_info->doc_id)<<std::endl;
     }
+  /*  
+  for (auto it : (index::Inverted_index))
+  {
+    std::cout<<"doc_id= "<<it.first<<std::endl;
+  }
+  */
+
     std::cout<<"build index finished!"<<std::endl;
     file.close();
     return true;
-  }
+  } 
+
+
   const DocInfo* index::BuildForward(const std::string& line)
   {
     //1.对这一行内容进行切分
@@ -73,14 +98,16 @@ namespace searcher
 
     Forward_index.push_back(doc_info);
     return &Forward_index[Forward_index.size() - 1];
-  }
+  } 
+
+
   void index::BuildInverted(const DocInfo& doc_info)
   {
     //1.先对得到的doc_info进行分词(标题和正文都要分)
     std::vector<std::string> title_tokens;//放正文分词结果
     CutWord(doc_info.title,&title_tokens);
     std::vector<std::string> content_tokens;//放正文分词结果 
-    CutWord(doc_info.content,&title_tokens);
+    CutWord(doc_info.content,&content_tokens);
 
     //2.对doc_info中的标题和正文进行词频统计
     //    这里要说明标题中出现的权重应该大于正文
@@ -124,15 +151,124 @@ namespace searcher
       w.doc_id = doc_info.doc_id;
       w.weight = 10 * ((iter.second).title_count) + 
               (iter.second).content_count;
+      w.key = iter.first;//把出现的词记录一下，方便后面使用
+      
       //typedef std::vector<Weight> InvertedList; 
       //这一步已经包括了第四和第五点，因为unordered_map的operator[]具有查找功能，存在返回引用，不存在则创建后返回引用。我们直接对其vector<Weight>进行插入w就可以了。
       InvertedList& invertedList = Inverted_index[iter.first];
       
       invertedList.push_back(w);
-      return ;
     }
-    
   }
+    
 
- 
-}
+    void index::CutWord(const std::string& input,std::vector<std::string>* output)
+    {
+      //直接使用外部构造的结巴分词方法
+      jieba.CutForSearch(input,*output);
+
+    }
+
+
+    //////////////////////////////////////////////////////////////////////
+    //下面代码是搜索模块的实现
+    //
+    
+    //初始化Searcher
+    bool Searcher::init(const std::string& input_path)
+    {
+      return index_->Bulid(input_path);
+    }
+
+    bool Searcher::search(const std::string& query,std::string* json_result)
+    {
+      //1.分词：对要搜索的字段进行分词                              
+      std::vector<std::string> tokens;
+      index_->CutWord(query,&tokens);
+      
+
+      std::vector<Weight> all_tokens_result;//弄一个Weight的数组暂时存储每个分词对应的查找结果
+
+      //2.查找：对所有的分词结果依次在倒排索引中查找,找出 出现分词的html文件编号和词频
+      for (std::string word : tokens)
+      {
+        auto* ret = index_->GetInvertedList(word);
+        if (ret == nullptr)
+        {
+          continue;//这里查找不到说明在倒排索引中没有这个分词，跳过即可。
+        }
+
+        //将当前分词结果暂存all_tokens_result
+        all_tokens_result.insert(all_tokens_result.end(),ret->begin(),ret->end());
+      }
+      
+      //3.排序：根据查找的结果中词频的大小进行排序，毕竟出现次数多的更应该放前面      
+      std::sort(all_tokens_result.begin(),all_tokens_result.end(),
+          [](const Weight& w1,const Weight& w2){//这里使用一下匿名函数，作为自定义的比较函数
+              return w1.weight > w2.weight;
+          });
+      
+      //4.构造返回结果：根据查找结果中的编号，查找正排索引，输出搜索的最终内容
+      //
+      //为了组织最终的输出内容，我用了简单的JSON格式
+      /*预期结果：
+      [
+        {
+          "title": "这时标题",
+          "desc": "这时描述",
+          "url": "这时url",
+        },
+
+        {                                                                                     
+          "title": "这时标题",                                                                   
+          "desc": "这时描述",
+          "url": "这时url",                                                           
+        }, 
+
+          ...
+
+      ] 
+      */
+      Json::Value Results;//存所有最终的搜索结果
+      for (const auto& weight : all_tokens_result)
+      {
+        auto* doc = index_->GetDocInfo(weight.doc_id);//找正排，拿到doc_info结构体
+        if (doc == nullptr)//没找到
+          continue;
+
+      //现在已经拿到了一条搜索的最终结果，使用线程的json第三方库jsoncpp
+        
+        Json::Value result;//存当前这一条搜索结果
+        result["desc"] = MakeDesc(doc->content,weight.key) ;//正文太长了，构建一个摘要比较合适
+        result["url"] = doc->url;
+        result["title"] = doc->title;
+        Results.append(result);//插入到最终结果中
+        
+      }
+    
+      Json::FastWriter writer;
+      *json_result = writer.write(Results);
+      return true;
+    }
+   
+    std::string Searcher::MakeDesc(const std::string& content,std::string key)//构建摘要
+    {
+      size_t pos = content.find(key);
+      if (pos == std::string::npos)//正文中没有key，而在标题中
+      {
+        if (content.size() < 100)
+          return content;
+        else
+          return content.substr(0,100) + "...";
+      }
+
+      //说明找到了,那么向前取一部分，向后取一部分，构成摘要
+      size_t begin = pos < 50 ? 0 : pos - 50;//向前取50个字节，不足则从0下标开始
+      if (pos + 50 >= content.size())//向后取50个字节，不足则全取
+        return content.substr(begin);
+      else
+        return content.substr(begin,100)+ "..." ;
+
+    }
+
+}//end namespace searcher 
