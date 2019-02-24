@@ -34,12 +34,14 @@ C++/Linux g++5.3.1
   3. 排序：将所有的查找结果根据出现的词频进行排序，词频高的排在前面。
   4. 构建：根据排序结果，依次查找正排索引，得到对应html文件的标题，URL，正文。
 
-本项目引入了外部的httplib头文件，使用户能够通过http请求的方式对Boost文档进行查询。效果如下图
+本项目引入了外部的httplib头文件，使用户能够通过http请求的方式对Boost文档进行查询。资料地址：https://github.com/yhirose/cpp-httplib
   
 ### 效果图  
+  目前的效果图只能将查找的内容陈列出来，作者并不懂很多前端知识，但也正在尝试修改中。
 #### 查询关键字class
 ![Image text](https://github.com/ferlanymh/search_engine/blob/master/%E6%9F%A5%E8%AF%A2%E5%85%B3%E9%94%AE%E5%AD%97class%E7%9A%84%E6%95%88%E6%9E%9C%E5%9B%BE.png)
 
-#### 查询关键字Home Libraries
-![Image text](https://github.com/ferlanymh/search_engine/blob/master/查询关键字Home Libraries.png)
 
+#### 查询关键字Home Libraries
+
+![Image text](https://github.com/ferlanymh/search_engine/blob/master/%E6%9F%A5%E8%AF%A2%E5%85%B3%E9%94%AE%E5%AD%97Home%20Libraries.png)
