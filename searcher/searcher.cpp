@@ -246,7 +246,7 @@ namespace searcher
         
       }
     
-      Json::FastWriter writer;
+      Json::StyledWriter writer;
       *json_result = writer.write(Results);
       return true;
     }
