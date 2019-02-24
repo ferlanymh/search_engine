@@ -40,4 +40,6 @@ C++/Linux g++5.3.1
 #### 查询关键字class
 ![Image text](https://github.com/ferlanymh/search_engine/blob/master/%E6%9F%A5%E8%AF%A2%E5%85%B3%E9%94%AE%E5%AD%97class%E7%9A%84%E6%95%88%E6%9E%9C%E5%9B%BE.png)
 
+#### 查询关键字Home Libraries
+![Image text](https://github.com/ferlanymh/search_engine/blob/master/查询关键字Home Libraries.png)
 
