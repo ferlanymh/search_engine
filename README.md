@@ -41,7 +41,7 @@ C++/Linux g++5.3.1
 本项目引入了外部的httplib头文件，使用户能够通过http请求的方式对Boost文档进行查询。资料地址：https://github.com/yhirose/cpp-httplib
   
 ### 效果图  
-  目前的效果图只能将查找的内容陈列出来，作者并不懂很多前端知识，但也正在尝试修改中。
+  目前的效果图只能将查找的内容陈列出来，作者并不懂很多前端知识，但也正在修改中。
 #### 查询关键字filesystem
 ![Image text](https://github.com/ferlanymh/search_engine/blob/master/%E6%9F%A5%E8%AF%A2filesystem%E5%85%B3%E9%94%AE%E5%AD%97.png)
 
