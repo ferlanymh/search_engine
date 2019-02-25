@@ -42,7 +42,7 @@ C++/Linux g++5.3.1
   
 ### 效果图  
   目前的效果图只能将查找的内容陈列出来，作者并不懂很多前端知识，但也正在尝试修改中。
-#### 查询关键字class
+#### 查询关键字filesystem
 ![Image text](https://github.com/ferlanymh/search_engine/blob/master/%E6%9F%A5%E8%AF%A2filesystem%E5%85%B3%E9%94%AE%E5%AD%97.png)
 
 
